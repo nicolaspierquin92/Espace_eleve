@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Élèves — Fiches de Séance</title>
+<style>
+  :root{
+    --bg1:#0f172a;
+    --bg2:#1e293b;
+    --accent:#38bdf8;
+    --accent2:#818cf8;
+    --card:#111827;
+    --text:#e5e7eb;
+    --muted:#94a3b8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%,#0b1120);
+    color:var(--text);
+    min-height:100vh;
+  }
+  header{
+    padding:48px 24px 24px;
+    text-align:center;
+  }
+  header h1{
+    font-size:2.2rem;
+    margin:0 0 8px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    font-weight:800;
+  }
+  header p{
+    color:var(--muted);
+    margin:0;
+    font-size:1rem;
+  }
+  #status{
+    text-align:center;
+    color:var(--muted);
+    font-size:.85rem;
+    margin-bottom:24px;
+  }
+  .container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:0 24px 60px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:22px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid rgba(148,163,184,.15);
+    border-radius:18px;
+    padding:22px;
+    position:relative;
+    overflow:hidden;
+    transition:transform .25s ease, box-shadow .25s ease;
+    animation:fadeIn .5s ease both;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:-40px;
+    right:-40px;
+    width:120px;
+    height:120px;
+    background:radial-gradient(circle,var(--accent) 0%,transparent 70%);
+    opacity:.25;
+    border-radius:50%;
+  }
+  .card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 12px 30px rgba(56,189,248,.15);
+    border-color:rgba(56,189,248,.4);
+  }
+  .seance-tag{
+    display:inline-block;
+    font-size:.75rem;
+    font-weight:700;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    color:var(--accent);
+    background:rgba(56,189,248,.1);
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:1.25rem;
+    margin:0 0 18px;
+    color:var(--text);
+  }
+  .btn-row{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    text-decoration:none;
+    padding:11px 16px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:.92rem;
+    transition:opacity .2s, transform .2s;
+  }
+  .btn:hover{ transform:scale(1.02); opacity:.92; }
+  .btn-primary{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    color:#0b1120;
+  }
+  .btn-secondary{
+    background:rgba(148,163,184,.12);
+    color:var(--text);
+    border:1px solid rgba(148,163,184,.25);
+  }
+  .btn.disabled{
+    opacity:.35;
+    pointer-events:none;
+    background:rgba(148,163,184,.08);
+    color:var(--muted);
+  }
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    padding:60px 0;
+    font-size:1rem;
+  }
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(10px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:.8rem;
+    padding:20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Espace Élèves</h1>
+  <p>Retrouvez toutes vos fiches d'exercices et corrigés par séance</p>
+</header>
+
+<div id="status">Chargement des séances…</div>
+
+<div class="container">
+  <div id="grid" class="grid"></div>
+</div>
+
+<footer>Mis à jour automatiquement depuis Google Sheets</footer>
+
+<script>
+// ==== CONFIGURATION ====
+const SHEET_ID = "14OqJSc8UVnypn3SZaepQ0LSZF5lG3rU6BCMyKJFyMV4";
+const GID = "0";
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+const REFRESH_INTERVAL_MS = 60000; // rafraîchit toutes les 60s
+
+async function loadSheetData(){
+  try{
+    const res = await fetch(SHEET_URL);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(text.indexOf('{'), text.lastIndexOf('}')+1));
+    const rows = json.table.rows;
+
+    const seances = rows.map(r => {
+      const cells = r.c;
+      const get = (i) => cells[i] && cells[i].v ? String(cells[i].v).trim() : "";
+      return {
+        seance: get(0),
+        exercice: get(1),
+        corrige: get(2)
+      };
+    }).filter(s => s.seance !== "");
+
+    renderCards(seances);
+    document.getElementById('status').textContent =
+      `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')} — ${seances.length} séance(s) disponible(s)`;
+  }catch(err){
+    document.getElementById('status').textContent = "Erreur de chargement des données. Vérifiez le partage du Google Sheet.";
+    console.error(err);
+  }
+}
+
+function renderCards(seances){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = "";
+
+  if(seances.length === 0){
+    grid.innerHTML = `<div class="empty">Aucune séance disponible pour le moment.</div>`;
+    return;
+  }
+
+  seances.forEach((s, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = `${idx * 0.05}s`;
+
+    const exerciceBtn = s.exercice
+      ? `<a class="btn btn-primary" href="${s.exercice}" target="_blank" rel="noopener">📄 Feuille d'exercices</a>`
+      : `<span class="btn btn-primary disabled">📄 Feuille d'exercices</span>`;
+
+    const corrigeBtn = s.corrige
+      ? `<a class="btn btn-secondary" href="${s.corrige}" target="_blank" rel="noopener">✅ Corrigé</a>`
+      : `<span class="btn btn-secondary disabled">✅ Corrigé (à venir)</span>`;
+
+    card.innerHTML = `
+      <span class="seance-tag">Séance</span>
+      <h2>${s.seance}</h2>
+      <div class="btn-row">
+        ${exerciceBtn}
+        ${corrigeBtn}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+loadSheetData();
+setInterval(loadSheetData, REFRESH_INTERVAL_MS);
+</script>
+
+</body>
+</html>
