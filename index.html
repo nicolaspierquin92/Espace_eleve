@@ -169,7 +169,7 @@
 // ==== CONFIGURATION ====
 const SHEET_ID = "14OqJSc8UVnypn3SZaepQ0LSZF5lG3rU6BCMyKJFyMV4";
 const GID = "0";
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}&headers=1`;
 const REFRESH_INTERVAL_MS = 60000; // rafraîchit toutes les 60s
 
 async function loadSheetData(){
@@ -187,7 +187,7 @@ async function loadSheetData(){
         exercice: get(1),
         corrige: get(2)
       };
-    }).filter(s => s.seance !== "");
+    }).filter(s => s.seance !== "" && s.seance.toLowerCase() !== "séance" && s.seance.toLowerCase() !== "seance");
 
     renderCards(seances);
     document.getElementById('status').textContent =
