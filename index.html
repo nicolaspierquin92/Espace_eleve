@@ -29,12 +29,12 @@
     display:flex;
     justify-content:center;
     align-items:center;
-    background:rgba(10,14,26,.75);
+    background:#12141aee;
     backdrop-filter:blur(14px) saturate(140%);
     -webkit-backdrop-filter:blur(14px) saturate(140%);
-    border-bottom:1px solid rgba(56,189,248,.15);
-    padding:12px 20px;
-    box-shadow:0 4px 20px rgba(0,0,0,.25);
+    border-bottom:1px solid rgba(91,127,255,.15);
+    padding:14px 20px;
+    box-shadow:0 4px 20px rgba(0,0,0,.35);
   }
   .contact-inner{
     display:flex;
@@ -80,8 +80,10 @@
     .contact-pill{ padding:7px 12px; }
   }
   header{
-    padding:48px 24px 24px;
+    padding:56px 24px 24px;
     text-align:center;
+    position:relative;
+    z-index:1;
   }
   header h1{
     font-size:2.2rem;
@@ -233,6 +235,76 @@
     height:70px;
     border:0;
   }
+  .custom-audio{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:rgba(91,127,255,.06);
+    border:1px solid rgba(91,127,255,.15);
+    border-radius:12px;
+    padding:10px 14px;
+  }
+  .play-btn{
+    flex-shrink:0;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    border:none;
+    background:linear-gradient(135deg,var(--accent),#7c93ff);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:transform .2s;
+  }
+  .play-btn:hover{
+    transform:scale(1.08);
+  }
+  .play-btn svg{
+    width:18px;
+    height:18px;
+    fill:#fff;
+  }
+  .audio-progress-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .audio-seek{
+    width:100%;
+    height:4px;
+    -webkit-appearance:none;
+    appearance:none;
+    background:rgba(255,255,255,.15);
+    border-radius:999px;
+    outline:none;
+    cursor:pointer;
+  }
+  .audio-seek::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:var(--accent);
+    cursor:pointer;
+    box-shadow:0 0 0 3px rgba(91,127,255,.2);
+  }
+  .audio-seek::-moz-range-thumb{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:var(--accent);
+    border:none;
+    cursor:pointer;
+  }
+  .audio-time{
+    font-size:.72rem;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+  }
   .empty{
     text-align:center;
     color:var(--muted);
@@ -306,6 +378,7 @@ async function loadSheetData(){
     }).filter(s => s.seance !== "" && s.seance.toLowerCase() !== "séance" && s.seance.toLowerCase() !== "seance");
 
     renderCards(seances);
+    initCustomAudioPlayers();
     document.getElementById('status').textContent =
       `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')} — ${seances.length} séance(s) disponible(s)`;
   }catch(err){
@@ -342,44 +415,84 @@ function getDriveId(url){
     }
 
     function getYoutubeEmbed(url){
-      const m = url.match(/(?:youtu\.be\/|v=|embed\/)([A-Za-z0-9_-]{11})/);
+      const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);
       return m ? `https://www.youtube.com/embed/${m[1]}` : null;
     }
 
+    function getVimeoEmbed(url){
+      const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+    }
+
+    function getLoomEmbed(url){
+      const m = url.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/);
+      return m ? `https://www.loom.com/embed/${m[1]}` : null;
+    }
+
+    function isDirectFile(url){
+      return /\.(mp4|webm|ogg|mp3|wav|m4a)(\?.*)?$/i.test(url);
+    }
+
+    function buildMediaEmbed(url){
+      const yt = getYoutubeEmbed(url);
+      if(yt) return {type:'iframe', src:yt};
+      const vimeo = getVimeoEmbed(url);
+      if(vimeo) return {type:'iframe', src:vimeo};
+      const loom = getLoomEmbed(url);
+      if(loom) return {type:'iframe', src:loom};
+      const driveId = getDriveId(url);
+      if(driveId) return {type:'iframe', src:`https://drive.google.com/file/d/${driveId}/preview`};
+      if(isDirectFile(url)) return {type:'file', src:url};
+      return {type:'iframe', src:url};
+    }
+
     let audioBlock = "";
+    let audioSrcForPlayer = "";
     if(s.audio){
       const driveId = getDriveId(s.audio);
       if(driveId){
+        audioSrcForPlayer = `https://drive.google.com/uc?export=download&id=${driveId}`;
+      } else if(isDirectFile(s.audio)){
+        audioSrcForPlayer = s.audio;
+      }
+
+      if(audioSrcForPlayer){
+        const playerId = `audio-${idx}`;
         audioBlock = `<div class="media-block">
            <span class="media-label">🎧 Dictée</span>
-           <div class="drive-audio-wrapper"><iframe src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" loading="lazy"></iframe></div>
+           <div class="custom-audio" id="${playerId}">
+             <button class="play-btn" aria-label="Lecture">
+               <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+               <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+             </button>
+             <div class="audio-progress-wrap">
+               <input type="range" class="audio-seek" value="0" min="0" max="100" step="0.1">
+               <div class="audio-time"><span class="time-current">0:00</span> / <span class="time-total">0:00</span></div>
+             </div>
+             <audio preload="metadata" src="${audioSrcForPlayer}"></audio>
+           </div>
          </div>`;
       } else {
+        const media = buildMediaEmbed(s.audio);
         audioBlock = `<div class="media-block">
            <span class="media-label">🎧 Dictée</span>
-           <audio controls preload="none" src="${s.audio}"></audio>
+           <div class="drive-audio-wrapper"><iframe src="${media.src}" allow="autoplay" loading="lazy"></iframe></div>
          </div>`;
       }
     }
 
     let videoBlock = "";
     if(s.video){
-      const yt = getYoutubeEmbed(s.video);
-      const driveId = getDriveId(s.video);
-      if(yt){
+      const media = buildMediaEmbed(s.video);
+      if(media.type === 'file'){
         videoBlock = `<div class="media-block">
            <span class="media-label">🎬 Corrections en vidéo</span>
-           <div class="video-wrapper"><iframe src="${yt}" allowfullscreen loading="lazy"></iframe></div>
-         </div>`;
-      } else if(driveId){
-        videoBlock = `<div class="media-block">
-           <span class="media-label">🎬 Corrections en vidéo</span>
-           <div class="video-wrapper"><iframe src="https://drive.google.com/file/d/${driveId}/preview" allowfullscreen loading="lazy"></iframe></div>
+           <video controls preload="none" src="${media.src}"></video>
          </div>`;
       } else {
         videoBlock = `<div class="media-block">
            <span class="media-label">🎬 Corrections en vidéo</span>
-           <video controls preload="none" src="${s.video}"></video>
+           <div class="video-wrapper"><iframe src="${media.src}" allowfullscreen loading="lazy"></iframe></div>
          </div>`;
       }
     }
@@ -395,6 +508,61 @@ function getDriveId(url){
       ${videoBlock}
     `;
     grid.appendChild(card);
+  });
+}
+
+function initCustomAudioPlayers(){
+  document.querySelectorAll('.custom-audio').forEach(el => {
+    const audio = el.querySelector('audio');
+    const btn = el.querySelector('.play-btn');
+    const iconPlay = el.querySelector('.icon-play');
+    const iconPause = el.querySelector('.icon-pause');
+    const seek = el.querySelector('.audio-seek');
+    const timeCurrent = el.querySelector('.time-current');
+    const timeTotal = el.querySelector('.time-total');
+
+    function formatTime(t){
+      if(!isFinite(t)) return "0:00";
+      const m = Math.floor(t/60);
+      const s = Math.floor(t%60).toString().padStart(2,'0');
+      return `${m}:${s}`;
+    }
+
+    audio.addEventListener('loadedmetadata', () => {
+      timeTotal.textContent = formatTime(audio.duration);
+    });
+
+    btn.addEventListener('click', () => {
+      if(audio.paused){
+        document.querySelectorAll('.custom-audio audio').forEach(a => { if(a !== audio){ a.pause(); } });
+        audio.play();
+        iconPlay.style.display = 'none';
+        iconPause.style.display = '';
+      } else {
+        audio.pause();
+        iconPlay.style.display = '';
+        iconPause.style.display = 'none';
+      }
+    });
+
+    audio.addEventListener('ended', () => {
+      iconPlay.style.display = '';
+      iconPause.style.display = 'none';
+      seek.value = 0;
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if(audio.duration){
+        seek.value = (audio.currentTime / audio.duration) * 100;
+        timeCurrent.textContent = formatTime(audio.currentTime);
+      }
+    });
+
+    seek.addEventListener('input', () => {
+      if(audio.duration){
+        audio.currentTime = (seek.value / 100) * audio.duration;
+      }
+    });
   });
 }
 
