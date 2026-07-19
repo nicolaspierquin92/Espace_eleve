@@ -235,77 +235,7 @@
     height:70px;
     border:0;
   }
-  .custom-audio{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    background:rgba(91,127,255,.06);
-    border:1px solid rgba(91,127,255,.15);
-    border-radius:12px;
-    padding:10px 14px;
-  }
-  .play-btn{
-    flex-shrink:0;
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    border:none;
-    background:linear-gradient(135deg,var(--accent),#7c93ff);
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    transition:transform .2s;
-  }
-  .play-btn:hover{
-    transform:scale(1.08);
-  }
-  .play-btn svg{
-    width:18px;
-    height:18px;
-    fill:#fff;
-  }
-  .audio-progress-wrap{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-  }
-  .audio-seek{
-    width:100%;
-    height:4px;
-    -webkit-appearance:none;
-    appearance:none;
-    background:rgba(255,255,255,.15);
-    border-radius:999px;
-    outline:none;
-    cursor:pointer;
-  }
-  .audio-seek::-webkit-slider-thumb{
-    -webkit-appearance:none;
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:var(--accent);
-    cursor:pointer;
-    box-shadow:0 0 0 3px rgba(91,127,255,.2);
-  }
-  .audio-seek::-moz-range-thumb{
-    width:12px;
-    height:12px;
-    border-radius:50%;
-    background:var(--accent);
-    border:none;
-    cursor:pointer;
-  }
-  .audio-time{
-    font-size:.72rem;
-    color:var(--muted);
-    display:flex;
-    justify-content:space-between;
-  }
-  .empty{
+    .empty{
     text-align:center;
     color:var(--muted);
     padding:60px 0;
@@ -378,7 +308,6 @@ async function loadSheetData(){
     }).filter(s => s.seance !== "" && s.seance.toLowerCase() !== "séance" && s.seance.toLowerCase() !== "seance");
 
     renderCards(seances);
-    initCustomAudioPlayers();
     document.getElementById('status').textContent =
       `Dernière mise à jour : ${new Date().toLocaleTimeString('fr-FR')} — ${seances.length} séance(s) disponible(s)`;
   }catch(err){
@@ -446,56 +375,13 @@ function getDriveId(url){
       return {type:'iframe', src:url};
     }
 
-    let audioBlock = "";
-    let audioSrcForPlayer = "";
-    if(s.audio){
-      const driveId = getDriveId(s.audio);
-      if(driveId){
-        audioSrcForPlayer = `https://drive.google.com/uc?export=download&id=${driveId}`;
-      } else if(isDirectFile(s.audio)){
-        audioSrcForPlayer = s.audio;
-      }
+    const audioBtn = s.audio
+      ? `<a class="btn btn-secondary" href="${s.audio}" target="_blank" rel="noopener">🎧 Dictée</a>`
+      : `<span class="btn btn-secondary disabled">🎧 Dictée (à venir)</span>`;
 
-      if(audioSrcForPlayer){
-        const playerId = `audio-${idx}`;
-        audioBlock = `<div class="media-block">
-           <span class="media-label">🎧 Dictée</span>
-           <div class="custom-audio" id="${playerId}">
-             <button class="play-btn" aria-label="Lecture">
-               <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-               <svg class="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
-             </button>
-             <div class="audio-progress-wrap">
-               <input type="range" class="audio-seek" value="0" min="0" max="100" step="0.1">
-               <div class="audio-time"><span class="time-current">0:00</span> / <span class="time-total">0:00</span></div>
-             </div>
-             <audio preload="metadata" src="${audioSrcForPlayer}"></audio>
-           </div>
-         </div>`;
-      } else {
-        const media = buildMediaEmbed(s.audio);
-        audioBlock = `<div class="media-block">
-           <span class="media-label">🎧 Dictée</span>
-           <div class="drive-audio-wrapper"><iframe src="${media.src}" allow="autoplay" loading="lazy"></iframe></div>
-         </div>`;
-      }
-    }
-
-    let videoBlock = "";
-    if(s.video){
-      const media = buildMediaEmbed(s.video);
-      if(media.type === 'file'){
-        videoBlock = `<div class="media-block">
-           <span class="media-label">🎬 Corrections en vidéo</span>
-           <video controls preload="none" src="${media.src}"></video>
-         </div>`;
-      } else {
-        videoBlock = `<div class="media-block">
-           <span class="media-label">🎬 Corrections en vidéo</span>
-           <div class="video-wrapper"><iframe src="${media.src}" allowfullscreen loading="lazy"></iframe></div>
-         </div>`;
-      }
-    }
+    const videoBtn = s.video
+      ? `<a class="btn btn-secondary" href="${s.video}" target="_blank" rel="noopener">🎬 Corrections en vidéo</a>`
+      : `<span class="btn btn-secondary disabled">🎬 Corrections en vidéo (à venir)</span>`;
 
     card.innerHTML = `
       <span class="seance-tag">Séance</span>
@@ -503,9 +389,9 @@ function getDriveId(url){
       <div class="btn-row">
         ${exerciceBtn}
         ${corrigeBtn}
+        ${audioBtn}
+        ${videoBtn}
       </div>
-      ${audioBlock}
-      ${videoBlock}
     `;
     grid.appendChild(card);
   });
