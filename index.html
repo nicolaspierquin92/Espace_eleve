@@ -6,13 +6,13 @@
 <title>Espace Élèves — Fiches de Séance</title>
 <style>
   :root{
-    --bg1:#0f172a;
-    --bg2:#1e293b;
-    --accent:#38bdf8;
-    --accent2:#818cf8;
-    --card:#111827;
-    --text:#e5e7eb;
-    --muted:#94a3b8;
+    --bg1:#12141a;
+    --bg2:#1a1d26;
+    --accent:#5b7fff;
+    --accent2:#a0aec0;
+    --card:#181b23;
+    --text:#f1f3f6;
+    --muted:#8a90a0;
   }
   *{box-sizing:border-box;}
   body{
@@ -21,6 +21,63 @@
     background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%,#0b1120);
     color:var(--text);
     min-height:100vh;
+  }
+  .contact-bar{
+    position:sticky;
+    top:0;
+    z-index:50;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:rgba(10,14,26,.75);
+    backdrop-filter:blur(14px) saturate(140%);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);
+    border-bottom:1px solid rgba(56,189,248,.15);
+    padding:12px 20px;
+    box-shadow:0 4px 20px rgba(0,0,0,.25);
+  }
+  .contact-inner{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .contact-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    text-decoration:none;
+    color:var(--text);
+    font-size:.85rem;
+    font-weight:600;
+    padding:8px 16px;
+    border-radius:999px;
+    background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(129,140,248,.12));
+    border:1px solid rgba(56,189,248,.25);
+    transition:all .25s ease;
+    white-space:nowrap;
+  }
+  .contact-pill em{
+    font-style:normal;
+    color:var(--muted);
+    font-weight:400;
+  }
+  .contact-pill:hover{
+    transform:translateY(-2px);
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0b1120;
+    box-shadow:0 6px 18px rgba(56,189,248,.35);
+    border-color:transparent;
+  }
+  .contact-pill:hover em{
+    color:#0b1120;
+  }
+  .pill-icon{
+    font-size:1rem;
+  }
+  @media (max-width:480px){
+    .pill-text{ font-size:.8rem; }
+    .contact-pill{ padding:7px 12px; }
   }
   header{
     padding:48px 24px 24px;
@@ -74,13 +131,13 @@
     width:120px;
     height:120px;
     background:radial-gradient(circle,var(--accent) 0%,transparent 70%);
-    opacity:.25;
+    opacity:.12;
     border-radius:50%;
   }
   .card:hover{
-    transform:translateY(-6px);
-    box-shadow:0 12px 30px rgba(56,189,248,.15);
-    border-color:rgba(56,189,248,.4);
+    transform:translateY(-4px);
+    box-shadow:0 14px 32px rgba(91,127,255,.12);
+    border-color:rgba(91,127,255,.35);
   }
   .seance-tag{
     display:inline-block;
@@ -132,6 +189,50 @@
     background:rgba(148,163,184,.08);
     color:var(--muted);
   }
+  .media-block{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(148,163,184,.15);
+  }
+  .media-label{
+    display:block;
+    font-size:.8rem;
+    color:var(--muted);
+    margin-bottom:8px;
+    font-weight:600;
+  }
+  audio, video{
+    width:100%;
+    border-radius:8px;
+    outline:none;
+  }
+  video{
+    max-height:180px;
+    background:#000;
+  }
+  .video-wrapper{
+    position:relative;
+    width:100%;
+    padding-top:56.25%;
+    border-radius:10px;
+    overflow:hidden;
+    background:#000;
+  }
+  .video-wrapper iframe{
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    border:0;
+  }
+  .drive-audio-wrapper{
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .drive-audio-wrapper iframe{
+    width:100%;
+    height:70px;
+    border:0;
+  }
   .empty{
     text-align:center;
     color:var(--muted);
@@ -151,6 +252,19 @@
 </style>
 </head>
 <body>
+
+<div class="contact-bar">
+  <div class="contact-inner">
+    <a class="contact-pill" href="mailto:Nicolaspierquin92@gmail.com">
+      <span class="pill-icon">✉️</span>
+      <span class="pill-text">Nicolaspierquin92@gmail.com</span>
+    </a>
+    <a class="contact-pill" href="sms:+33649409226">
+      <span class="pill-icon">📱</span>
+      <span class="pill-text">06 49 40 92 26 <em>(SMS)</em></span>
+    </a>
+  </div>
+</div>
 
 <header>
   <h1>📚 Espace Élèves</h1>
@@ -185,7 +299,9 @@ async function loadSheetData(){
       return {
         seance: get(0),
         exercice: get(1),
-        corrige: get(2)
+        corrige: get(2),
+        audio: get(3),
+        video: get(4)
       };
     }).filter(s => s.seance !== "" && s.seance.toLowerCase() !== "séance" && s.seance.toLowerCase() !== "seance");
 
@@ -220,6 +336,54 @@ function renderCards(seances){
       ? `<a class="btn btn-secondary" href="${s.corrige}" target="_blank" rel="noopener">✅ Corrigé</a>`
       : `<span class="btn btn-secondary disabled">✅ Corrigé (à venir)</span>`;
 
+function getDriveId(url){
+      const m = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{20,})/);
+      return m ? m[1] : null;
+    }
+
+    function getYoutubeEmbed(url){
+      const m = url.match(/(?:youtu\.be\/|v=|embed\/)([A-Za-z0-9_-]{11})/);
+      return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+    }
+
+    let audioBlock = "";
+    if(s.audio){
+      const driveId = getDriveId(s.audio);
+      if(driveId){
+        audioBlock = `<div class="media-block">
+           <span class="media-label">🎧 Dictée</span>
+           <div class="drive-audio-wrapper"><iframe src="https://drive.google.com/file/d/${driveId}/preview" allow="autoplay" loading="lazy"></iframe></div>
+         </div>`;
+      } else {
+        audioBlock = `<div class="media-block">
+           <span class="media-label">🎧 Dictée</span>
+           <audio controls preload="none" src="${s.audio}"></audio>
+         </div>`;
+      }
+    }
+
+    let videoBlock = "";
+    if(s.video){
+      const yt = getYoutubeEmbed(s.video);
+      const driveId = getDriveId(s.video);
+      if(yt){
+        videoBlock = `<div class="media-block">
+           <span class="media-label">🎬 Corrections en vidéo</span>
+           <div class="video-wrapper"><iframe src="${yt}" allowfullscreen loading="lazy"></iframe></div>
+         </div>`;
+      } else if(driveId){
+        videoBlock = `<div class="media-block">
+           <span class="media-label">🎬 Corrections en vidéo</span>
+           <div class="video-wrapper"><iframe src="https://drive.google.com/file/d/${driveId}/preview" allowfullscreen loading="lazy"></iframe></div>
+         </div>`;
+      } else {
+        videoBlock = `<div class="media-block">
+           <span class="media-label">🎬 Corrections en vidéo</span>
+           <video controls preload="none" src="${s.video}"></video>
+         </div>`;
+      }
+    }
+
     card.innerHTML = `
       <span class="seance-tag">Séance</span>
       <h2>${s.seance}</h2>
@@ -227,6 +391,8 @@ function renderCards(seances){
         ${exerciceBtn}
         ${corrigeBtn}
       </div>
+      ${audioBlock}
+      ${videoBlock}
     `;
     grid.appendChild(card);
   });
