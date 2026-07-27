@@ -204,6 +204,19 @@
   .intro-lead strong{
     color:var(--text);
   }
+  .intro-note{
+    font-size:.9rem;
+    color:var(--muted);
+    line-height:1.6;
+    background:rgba(251,191,36,.06);
+    border:1px solid rgba(251,191,36,.2);
+    border-radius:12px;
+    padding:14px 18px;
+    margin:0 0 24px;
+  }
+  .intro-note strong{
+    color:var(--text);
+  }
   .program-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -460,7 +473,9 @@
 
     <div class="intro-divider"></div>
 
-    <p class="intro-lead">Le fonctionnement de cette plateforme est simple : tous les dimanches apparaissent les exercices de la semaine ainsi que les corrections de la semaine passée, répartis de la façon suivante : <strong>2h de mathématiques</strong> et <strong>1h de français</strong>.</p>
+    <p class="intro-lead">Le fonctionnement de cette plateforme est simple : tous les dimanches apparaissent les exercices de la semaine ainsi que les corrections de la semaine passée, répartis de la façon suivante : <strong>2h de mathématiques</strong> et <strong>1h de français</strong>. L'idée est d'essayer d'aborder la 3ème un peu plus sereinement, en revoyant tranquillement les bases de 4ème.</p>
+
+    <p class="intro-note">📘 Petit conseil : ça peut être utile de <strong>garder les fiches de cours</strong> de côté. Elles reprennent les points essentiels du programme de 4ème et pourront servir de petit aide-mémoire pendant l'année, si besoin.</p>
 
     <div class="program-grid">
       <div class="program-card">
@@ -519,9 +534,9 @@ async function loadSheetData(){
       return {
         seance: get(0),
         exercice: get(1),
-        corrige: get(2),
-        audio: get(3),
-        video: get(4)
+        cours: get(2),
+        corrige: get(3),
+        audio: get(4)
       };
     }).filter(s => s.seance !== "" && s.seance.toLowerCase() !== "séance" && s.seance.toLowerCase() !== "seance");
 
@@ -552,63 +567,26 @@ function renderCards(seances){
       ? `<a class="btn btn-primary" href="${s.exercice}" target="_blank" rel="noopener">📄 Feuille d'exercices</a>`
       : `<span class="btn btn-primary disabled">📄 Feuille d'exercices</span>`;
 
+    const coursBtn = s.cours
+      ? `<a class="btn btn-secondary" href="${s.cours}" target="_blank" rel="noopener">📘 Fiche de cours</a>`
+      : `<span class="btn btn-secondary disabled">📘 Fiche de cours (à venir)</span>`;
+
     const corrigeBtn = s.corrige
       ? `<a class="btn btn-secondary" href="${s.corrige}" target="_blank" rel="noopener">✅ Corrigé</a>`
       : `<span class="btn btn-secondary disabled">✅ Corrigé (à venir)</span>`;
 
-function getDriveId(url){
-      const m = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]{20,})/);
-      return m ? m[1] : null;
-    }
-
-    function getYoutubeEmbed(url){
-      const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([A-Za-z0-9_-]{11})/);
-      return m ? `https://www.youtube.com/embed/${m[1]}` : null;
-    }
-
-    function getVimeoEmbed(url){
-      const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-      return m ? `https://player.vimeo.com/video/${m[1]}` : null;
-    }
-
-    function getLoomEmbed(url){
-      const m = url.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/);
-      return m ? `https://www.loom.com/embed/${m[1]}` : null;
-    }
-
-    function isDirectFile(url){
-      return /\.(mp4|webm|ogg|mp3|wav|m4a)(\?.*)?$/i.test(url);
-    }
-
-    function buildMediaEmbed(url){
-      const yt = getYoutubeEmbed(url);
-      if(yt) return {type:'iframe', src:yt};
-      const vimeo = getVimeoEmbed(url);
-      if(vimeo) return {type:'iframe', src:vimeo};
-      const loom = getLoomEmbed(url);
-      if(loom) return {type:'iframe', src:loom};
-      const driveId = getDriveId(url);
-      if(driveId) return {type:'iframe', src:`https://drive.google.com/file/d/${driveId}/preview`};
-      if(isDirectFile(url)) return {type:'file', src:url};
-      return {type:'iframe', src:url};
-    }
-
     const audioBtn = s.audio
       ? `<a class="btn btn-secondary" href="${s.audio}" target="_blank" rel="noopener">🎧 Dictée</a>`
       : `<span class="btn btn-secondary disabled">🎧 Dictée (à venir)</span>`;
-
-    const videoBtn = s.video
-      ? `<a class="btn btn-secondary" href="${s.video}" target="_blank" rel="noopener">🎬 Corrections en vidéo</a>`
-      : `<span class="btn btn-secondary disabled">🎬 Corrections en vidéo (à venir)</span>`;
 
     card.innerHTML = `
       <span class="seance-tag">Séance</span>
       <h2>${s.seance}</h2>
       <div class="btn-row">
         ${exerciceBtn}
+        ${coursBtn}
         ${corrigeBtn}
         ${audioBtn}
-        ${videoBtn}
       </div>
     `;
     grid.appendChild(card);
