@@ -22,6 +22,113 @@
     color:var(--text);
     min-height:100vh;
   }
+  .login-overlay{
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    background:radial-gradient(circle at 50% 30%,#1a1d26,#0b0d12 80%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .login-box{
+    background:var(--card);
+    border:1px solid rgba(91,127,255,.2);
+    border-radius:20px;
+    padding:36px 32px;
+    max-width:380px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .login-icon{
+    font-size:2.2rem;
+    margin-bottom:12px;
+  }
+  .login-box h2{
+    margin:0 0 8px;
+    font-size:1.25rem;
+    color:var(--text);
+  }
+  .login-box p{
+    margin:0 0 20px;
+    font-size:.85rem;
+    color:var(--muted);
+  }
+  .login-box input{
+    width:100%;
+    padding:12px 14px;
+    margin-bottom:12px;
+    border-radius:10px;
+    border:1px solid rgba(148,163,184,.25);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    font-size:.9rem;
+    outline:none;
+    transition:border-color .2s;
+    box-sizing:border-box;
+  }
+  .login-box input:focus{
+    border-color:var(--accent);
+  }
+  .login-box input::placeholder{
+    color:var(--muted);
+  }
+  #login-submit{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),#7c93ff);
+    color:#fff;
+    font-weight:700;
+    font-size:.92rem;
+    cursor:pointer;
+    margin-top:6px;
+    transition:opacity .2s, transform .2s;
+  }
+  #login-submit:hover{
+    opacity:.9;
+    transform:translateY(-1px);
+  }
+  .login-hint{
+    margin-top:16px !important;
+    font-size:.72rem !important;
+    color:var(--muted);
+    opacity:.7;
+  }
+  .user-badge{
+    position:fixed;
+    top:14px;
+    left:14px;
+    z-index:60;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(24,27,35,.85);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(91,127,255,.2);
+    border-radius:999px;
+    padding:6px 14px 6px 6px;
+  }
+  .badge-circle{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),#7c93ff);
+    color:#fff;
+    font-weight:700;
+    font-size:.85rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .badge-name{
+    font-size:.82rem;
+    color:var(--text);
+    font-weight:600;
+  }
   .contact-bar{
     position:sticky;
     top:0;
@@ -443,6 +550,23 @@
 </head>
 <body>
 
+<div id="login-overlay" class="login-overlay">
+  <div class="login-box">
+    <div class="login-icon">🔒</div>
+    <h2>Accès à l'espace élèves</h2>
+    <p>Merci de vous identifier pour accéder à la plateforme</p>
+    <input type="text" id="login-prenom" placeholder="Prénom" autocomplete="given-name">
+    <input type="email" id="login-email" placeholder="Adresse e-mail" autocomplete="email">
+    <button id="login-submit">Accéder à la plateforme</button>
+    <p class="login-hint">Cette plateforme est réservée aux élèves inscrits — merci de ne pas partager le lien.</p>
+  </div>
+</div>
+
+<div id="user-badge" class="user-badge" style="display:none;">
+  <div class="badge-circle" id="badge-letter"></div>
+  <span id="badge-name" class="badge-name"></span>
+</div>
+
 <div class="contact-bar">
   <div class="contact-inner">
     <a class="contact-pill" href="mailto:Nicolaspierquin92@gmail.com">
@@ -648,6 +772,48 @@ function initCustomAudioPlayers(){
   });
 }
 
+function initLoginGate(){
+  const overlay = document.getElementById('login-overlay');
+  const badge = document.getElementById('user-badge');
+  const badgeLetter = document.getElementById('badge-letter');
+  const badgeName = document.getElementById('badge-name');
+  const submitBtn = document.getElementById('login-submit');
+  const prenomInput = document.getElementById('login-prenom');
+  const emailInput = document.getElementById('login-email');
+
+  function showBadge(prenom){
+    badgeLetter.textContent = prenom.trim().charAt(0).toUpperCase();
+    badgeName.textContent = prenom.trim();
+    badge.style.display = 'flex';
+  }
+
+  const saved = sessionStorage.getItem('eleve_prenom');
+  if(saved){
+    overlay.style.display = 'none';
+    showBadge(saved);
+  }
+
+  submitBtn.addEventListener('click', () => {
+    const prenom = prenomInput.value.trim();
+    const email = emailInput.value.trim();
+    if(!prenom || !email){
+      prenomInput.style.borderColor = !prenom ? '#f87171' : '';
+      emailInput.style.borderColor = !email ? '#f87171' : '';
+      return;
+    }
+    sessionStorage.setItem('eleve_prenom', prenom);
+    overlay.style.display = 'none';
+    showBadge(prenom);
+  });
+
+  [prenomInput, emailInput].forEach(inp => {
+    inp.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') submitBtn.click();
+    });
+  });
+}
+
+initLoginGate();
 loadSheetData();
 setInterval(loadSheetData, REFRESH_INTERVAL_MS);
 </script>
